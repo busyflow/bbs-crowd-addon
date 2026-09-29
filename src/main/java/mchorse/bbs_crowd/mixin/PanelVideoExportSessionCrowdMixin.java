@@ -11,8 +11,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.io.File;
-
 @Mixin(value = PanelVideoExportSession.class, remap = false)
 public class PanelVideoExportSessionCrowdMixin {
     @Shadow
@@ -22,7 +20,7 @@ public class PanelVideoExportSessionCrowdMixin {
     private String bbs_crowd$preloadFilmId;
 
     @Inject(method = "start", at = @At("HEAD"))
-    private void bbs_crowd$onStart(File file, CallbackInfoReturnable<Boolean> cir) {
+    private void bbs_crowd$onStart(int duration, int textureId, int width, int height, CallbackInfoReturnable<Boolean> cir) {
         if (this.editor != null && this.editor.getData() != null) {
             this.bbs_crowd$preloadFilmId = this.editor.getData().getId();
             CrowdExportPreload.begin(this.bbs_crowd$preloadFilmId);

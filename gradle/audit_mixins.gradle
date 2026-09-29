@@ -135,10 +135,7 @@ tasks.register('auditAllMixins') {
 		}
 		
 		// 2. Read mixin json files
-		def mixinJsonFiles = [
-			file("src/main/resources/bbs-crowd.mixins.json"),
-			file("src/main/resources/bbs-crowd.client.mixins.json")
-		]
+		def mixinJsonFiles = fileTree(dir: "src/main/resources", include: "**/*mixin*.json").files
 		def allMixinEntries = []
 		for (f in mixinJsonFiles) {
 			if (!f.exists()) continue
@@ -226,10 +223,18 @@ tasks.register('auditAllMixins') {
 						if (an.desc == "Lorg/spongepowered/asm/mixin/Shadow;") {
 							// Check if field or method exists
 							boolean isMethod = mn.desc.contains("(")
-							boolean found = isMethod ? hasMethodInHierarchy(targetCn, mn.name, null) : hasFieldInHierarchy(targetCn, mn.name)
-							if (!found) {
-								println("[ERROR] @Shadow target not found in hierarchy: " + targetClassName + "." + mn.name + (isMethod ? mn.desc : "") + " (in " + shortName + ")")
-								totalIssues++
+							if (isMethod) {
+								boolean foundDirect = targetCn.methods.any { it.name == mn.name && (mn.desc == null || it.desc == mn.desc) }
+								if (!foundDirect) {
+									println("[ERROR] @Shadow method not declared directly on target class: " + targetClassName + "." + mn.name + mn.desc + " (in " + shortName + "). SpongePowered Mixin does NOT resolve shadow methods from superclasses!")
+									totalIssues++
+								}
+							} else {
+								boolean foundField = hasFieldInHierarchy(targetCn, mn.name)
+								if (!foundField) {
+									println("[ERROR] @Shadow field not found in hierarchy: " + targetClassName + "." + mn.name + " (in " + shortName + ")")
+									totalIssues++
+								}
 							}
 						} else if (an.desc == "Lorg/spongepowered/asm/mixin/injection/Inject;" ||
 						           an.desc == "Lorg/spongepowered/asm/mixin/injection/Redirect;" ||
@@ -284,6 +289,57 @@ tasks.register('auditAllMixins') {
 								
 								if (!matchingTargetMethods.isEmpty()) {
 									matchedMethodCount++
+									
+									// Validate @Inject method descriptor against matching target methods
+									if (an.desc == "Lorg/spongepowered/asm/mixin/injection/Inject;") {
+										def handlerArgs = org.objectweb.asm.Type.getArgumentTypes(mn.desc)
+										if (handlerArgs.length == 0) {
+											println("[ERROR] @Inject handler " + shortName + "." + mn.name + " must take CallbackInfo or CallbackInfoReturnable!")
+											totalIssues++
+										} else {
+											def lastArg = handlerArgs[handlerArgs.length - 1]
+											boolean isCIR = lastArg.descriptor.startsWith("Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable")
+											boolean isCI = lastArg.descriptor == "Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;"
+											
+											if (!isCI && !isCIR) {
+												println("[ERROR] @Inject handler " + shortName + "." + mn.name + " last parameter must be CallbackInfo or CallbackInfoReturnable, found: " + lastArg.descriptor)
+												totalIssues++
+											}
+											
+											boolean anyDescriptorMatch = false
+											for (MethodNode tmn : matchingTargetMethods) {
+												def targetArgs = org.objectweb.asm.Type.getArgumentTypes(tmn.desc)
+												def targetRet = org.objectweb.asm.Type.getReturnType(tmn.desc)
+												
+												boolean retMatch = (targetRet.sort == org.objectweb.asm.Type.VOID) ? isCI : isCIR
+												
+												int leadingCount = handlerArgs.length - 1
+												boolean argsMatch = false
+												if (leadingCount == 0) {
+													argsMatch = true
+												} else if (leadingCount == targetArgs.length) {
+													argsMatch = true
+													for (int p = 0; p < leadingCount; p++) {
+														if (handlerArgs[p].descriptor != targetArgs[p].descriptor) {
+															argsMatch = false
+															break
+														}
+													}
+												}
+												
+												if (retMatch && argsMatch) {
+													anyDescriptorMatch = true
+													break
+												}
+											}
+											
+											if (!anyDescriptorMatch) {
+												println("[ERROR] @Inject handler descriptor mismatch on " + shortName + "." + mn.name + mn.desc + " targeting " + targetClassName + "." + mName + "! Target methods: " + matchingTargetMethods.collect { it.name + it.desc })
+												totalIssues++
+											}
+										}
+									}
+									
 									if (atAnn != null) {
 										String atValue = null
 										String atTarget = null

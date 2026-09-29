@@ -6,6 +6,7 @@ import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ui.film.UIFilmPreview;
 import mchorse.bbs_mod.ui.film.clips.area.AreaBrush;
 import mchorse.bbs_mod.ui.framework.UIContext;
+import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.utils.Area;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,17 +21,12 @@ public abstract class UIFilmPreviewCrowdMixin {
     @Shadow
     public UIFilmPanel panel;
 
-    @Shadow
-    public Area area;
-
-    @Shadow
-    public abstract boolean canBeSeen();
-
     @Inject(method = "subMouseClicked", at = @At("HEAD"), cancellable = true)
     private void bbs_crowd$onSubMouseClicked(UIContext context, CallbackInfoReturnable<Boolean> cir) {
-        if (this.area != null && this.area.isInside(context) && this.panel != null) {
+        UIElement element = (UIElement) (Object) this;
+        if (element.area != null && element.area.isInside(context) && this.panel != null) {
             Camera camera = this.panel.getCamera();
-            if (camera != null && AreaBrush.click(context, this.area, camera)) {
+            if (camera != null && AreaBrush.click(context, element.area, camera)) {
                 cir.setReturnValue(true);
             }
         }
@@ -43,16 +39,17 @@ public abstract class UIFilmPreviewCrowdMixin {
 
     @Inject(method = "render", at = @At("RETURN"))
     private void bbs_crowd$onRender(UIContext context, CallbackInfo ci) {
-        if (AreaBrush.isArmed() && this.canBeSeen() && this.panel != null && this.area != null) {
+        UIElement element = (UIElement) (Object) this;
+        if (AreaBrush.isArmed() && element.canBeSeen() && this.panel != null && element.area != null) {
             boolean left = Window.isMouseButtonPressed(GLFW.GLFW_MOUSE_BUTTON_LEFT);
             boolean right = Window.isMouseButtonPressed(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
             Camera camera = this.panel.getCamera();
 
             if (camera != null) {
-                AreaBrush.hover(context, this.area, camera);
+                AreaBrush.hover(context, element.area, camera);
 
-                if (this.area.isInside(context) && (left || right)) {
-                    AreaBrush.held(context, this.area, camera, right);
+                if (element.area.isInside(context) && (left || right)) {
+                    AreaBrush.held(context, element.area, camera, right);
                 } else {
                     AreaBrush.stopPainting();
                 }
