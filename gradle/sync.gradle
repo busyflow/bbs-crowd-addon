@@ -24,14 +24,34 @@ tasks.register('syncModrinthDb') {
 			return md.digest().encodeHex().toString()
 		}
 		
-		def mods = [
-			[
-				id: 'instance-file:bbs-crowd-1-0-0-irongolemciv',
-				path: 'C:/Users/jacqu/AppData/Roaming/ModrinthApp/profiles/Iron Golem civ/mods/bbs_crowd-1.0.0-1.20.1.jar',
-				rel: 'mods/bbs_crowd-1.0.0-1.20.1.jar',
-				name: 'bbs_crowd-1.0.0-1.20.1.jar'
-			]
+		def modNames = [
+			'bbs_crowd-1.0.0-1.20.1.jar',
+			'bbs-2.7-1.20.1.jar',
+			'bbs_pov-1.0.0-1.20.1.jar',
+			'bbs_physics-1.1-1.20.1.jar',
+			'refreshedui-1.3.2-fs2.7-1.20.1.jar',
+			'irlite-1.1.8+mc1.20.1.jar'
 		]
+		
+		def mods = []
+		for (name in modNames) {
+			def path = "C:/Users/jacqu/AppData/Roaming/ModrinthApp/profiles/Iron Golem civ/mods/${name}"
+			def rel = "mods/${name}"
+			def checkStmt = conn.prepareStatement("SELECT id FROM instance_files WHERE instance_id = 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4' AND (file_name = ? OR relative_path = ?)")
+			checkStmt.setString(1, name)
+			checkStmt.setString(2, rel)
+			def rs = checkStmt.executeQuery()
+			def existingId = rs.next() ? rs.getString("id") : "instance-file:${name.replace('.', '-')}-irongolemciv"
+			rs.close()
+			checkStmt.close()
+			
+			mods << [
+				id: existingId,
+				path: path,
+				rel: rel,
+				name: name
+			]
+		}
 		
 		for (m in mods) {
 			File f = new File(m.path)
