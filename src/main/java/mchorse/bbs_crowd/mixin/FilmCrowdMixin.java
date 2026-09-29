@@ -15,7 +15,7 @@ public class FilmCrowdMixin implements FilmCrowdAccess {
     private Crowds bbs_crowd$crowds;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void bbs_crowd$init(String id, CallbackInfo ci) {
+    private void bbs_crowd$init(CallbackInfo ci) {
         this.bbs_crowd$crowds = new Crowds("crowds");
         ((Film) (Object) this).add(this.bbs_crowd$crowds);
     }

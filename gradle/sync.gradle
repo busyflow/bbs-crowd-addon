@@ -98,33 +98,80 @@ tasks.register('syncModrinthDb') {
 			psBlob.setString(1, m.sha512)
 			psBlob.setLong(2, m.size)
 			psBlob.setLong(3, nowNs)
-			psBlob.setLong(4, nowNs)
-			psBlob.setLong(5, nowNs)
-			psBlob.setLong(6, nowNs)
+			psBlob.setLong(4, nowSec)
+			psBlob.setLong(5, nowSec)
+			psBlob.setLong(6, nowSec)
 			psBlob.executeUpdate()
 			println("Updated store_blobs for " + m.name)
 		}
 		psBlob.close()
 		
-		// 4. Update blob cache file
+		// 4. Update both store/content/objects and blob_store on disk
+		def storeDir = new File("C:/Users/jacqu/AppData/Roaming/ModrinthApp/store/content/objects")
 		def blobDir = new File("C:/Users/jacqu/AppData/Roaming/ModrinthApp/blob_store")
 		for (m in mods) {
 			def prefix = m.sha512.substring(0, 2)
-			def targetDir = new File(blobDir, prefix)
-			targetDir.mkdirs()
-			def targetBlob = new File(targetDir, m.sha512)
-			if (!targetBlob.exists() || targetBlob.length() != m.size) {
-				def sourceFile = new File(m.path)
-				targetBlob.bytes = sourceFile.bytes
-				println("Created blob cache: " + targetBlob.absolutePath)
+			
+			def sDir = new File(storeDir, prefix)
+			sDir.mkdirs()
+			def sBlob = new File(sDir, m.sha512)
+			if (!sBlob.exists() || sBlob.length() != m.size) {
+				java.nio.file.Files.copy(new File(m.path).toPath(), sBlob.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				println("Created store blob object: " + sBlob.absolutePath)
+			}
+			
+			def bDir = new File(blobDir, prefix)
+			bDir.mkdirs()
+			def bBlob = new File(bDir, m.sha512)
+			if (!bBlob.exists() || bBlob.length() != m.size) {
+				java.nio.file.Files.copy(new File(m.path).toPath(), bBlob.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+				println("Created blob_store object: " + bBlob.absolutePath)
 			}
 		}
 		
 		// 5. Update profile modified time
 		stmt.executeUpdate("UPDATE instances SET modified = " + nowSec + " WHERE id = 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4'")
 		
+		// 6. Verify table contents
+		def checkRs = stmt.executeQuery("SELECT file_name, enabled, missing, size FROM instance_files WHERE instance_id = 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4' AND file_name LIKE '%bbs%'")
+		println("\n--- Current BBS files in instance_files ---")
+		while (checkRs.next()) {
+			println("  " + checkRs.getString("file_name") + " -> enabled=" + checkRs.getInt("enabled") + ", missing=" + checkRs.getInt("missing") + ", size=" + checkRs.getLong("size"))
+		}
+		checkRs.close()
+		
 		conn.commit()
 		conn.close()
-		println("Successfully synchronized Modrinth SQLite DB for bbs-crowd-addon!")
+		println("Successfully synchronized Modrinth SQLite DB for all BBS mods!")
+	}
+}
+
+tasks.register('inspectDb') {
+	doLast {
+		def urls = configurations.sqlite.files.collect { it.toURI().toURL() } as URL[]
+		def loader = new URLClassLoader(urls, getClass().classLoader)
+		def driverClass = loader.loadClass("org.sqlite.JDBC")
+		java.sql.Driver driver = (java.sql.Driver) driverClass.getDeclaredConstructor().newInstance()
+		def conn = driver.connect("jdbc:sqlite:C:/Users/jacqu/AppData/Roaming/ModrinthApp/app.db", new Properties())
+		def stmt = conn.createStatement()
+		
+		def metaRs = stmt.executeQuery("PRAGMA table_info(instance_files)")
+		println("=== instance_files columns ===")
+		while (metaRs.next()) {
+			println("  " + metaRs.getString("name") + " (" + metaRs.getString("type") + ")")
+		}
+		metaRs.close()
+		
+		def rowsRs = stmt.executeQuery("SELECT * FROM instance_files WHERE instance_id = 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4' AND (file_name LIKE '%bbs%' OR file_name LIKE '%crowd%')")
+		def cols = rowsRs.getMetaData().getColumnCount()
+		println("\n=== instance_files rows ===")
+		while (rowsRs.next()) {
+			println("ROW:")
+			for (int i = 1; i <= cols; i++) {
+				println("  " + rowsRs.getMetaData().getColumnName(i) + ": " + rowsRs.getObject(i))
+			}
+		}
+		rowsRs.close()
+		conn.close()
 	}
 }
