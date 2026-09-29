@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "package": "mchorse.bbs_crowd.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "LivingEntityCrowdClientBodyMixin",
+    "ExtraFormSectionCrowdMixin",
+    "UIReplaysEditorCrowdMixin",
+    "UIFilmPanelCrowdMixin",
+    "UIFilmPreviewCrowdMixin",
+    "UIFilmControllerCrowdMixin",
+    "WorldVideoExportSessionCrowdMixin",
+    "PanelVideoExportSessionCrowdMixin",
+    "FilmsCrowdMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

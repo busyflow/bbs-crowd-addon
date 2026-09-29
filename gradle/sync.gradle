@@ -1,0 +1,110 @@
+import java.security.MessageDigest
+
+configurations {
+	sqlite
+}
+dependencies {
+	sqlite 'org.xerial:sqlite-jdbc:3.45.1.0'
+}
+
+tasks.register('syncModrinthDb') {
+	doLast {
+		def urls = configurations.sqlite.files.collect { it.toURI().toURL() } as URL[]
+		def loader = new URLClassLoader(urls, getClass().classLoader)
+		def driverClass = loader.loadClass("org.sqlite.JDBC")
+		java.sql.Driver driver = (java.sql.Driver) driverClass.getDeclaredConstructor().newInstance()
+		def conn = driver.connect("jdbc:sqlite:C:/Users/jacqu/AppData/Roaming/ModrinthApp/app.db", new Properties())
+		conn.setAutoCommit(false)
+		
+		def stmt = conn.createStatement()
+		
+		def calcHash = { File f, String algo ->
+			def md = MessageDigest.getInstance(algo)
+			f.eachByte(4096) { b, len -> md.update(b, 0, len) }
+			return md.digest().encodeHex().toString()
+		}
+		
+		def mods = [
+			[
+				id: 'instance-file:bbs-crowd-1-0-0-irongolemciv',
+				path: 'C:/Users/jacqu/AppData/Roaming/ModrinthApp/profiles/Iron Golem civ/mods/bbs_crowd-1.0.0-1.20.1.jar',
+				rel: 'mods/bbs_crowd-1.0.0-1.20.1.jar',
+				name: 'bbs_crowd-1.0.0-1.20.1.jar'
+			]
+		]
+		
+		for (m in mods) {
+			File f = new File(m.path)
+			if (!f.exists()) {
+				throw new GradleException("Mod file does not exist: " + m.path)
+			}
+			m.size = f.length()
+			m.sha1 = calcHash(f, "SHA-1")
+			m.sha512 = calcHash(f, "SHA-512")
+			println("Computed " + m.name + ": size=" + m.size + ", sha1=" + m.sha1)
+		}
+		
+		long nowSec = System.currentTimeMillis() / 1000L
+		long nowNs = System.currentTimeMillis() * 1000000L
+		
+		// 1. Update/insert instance_files
+		def psFile = conn.prepareStatement("INSERT OR REPLACE INTO instance_files (id, instance_id, relative_path, file_name, enabled, sha1, size, missing, added_at, modified_at) VALUES (?, 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4', ?, ?, 1, ?, ?, 0, ?, ?)")
+		for (m in mods) {
+			psFile.setString(1, m.id)
+			psFile.setString(2, m.rel)
+			psFile.setString(3, m.name)
+			psFile.setString(4, m.sha1)
+			psFile.setLong(5, m.size)
+			psFile.setLong(6, nowSec)
+			psFile.setLong(7, nowSec)
+			psFile.executeUpdate()
+			println("Updated instance_files for " + m.name + " (missing=0, size=" + m.size + ")")
+		}
+		psFile.close()
+		
+		// 2. Update store_instance_files
+		def psStoreFile = conn.prepareStatement("INSERT OR REPLACE INTO store_instance_files (file_id, blob_sha512, materialization_kind) VALUES (?, ?, 'copy')")
+		for (m in mods) {
+			psStoreFile.setString(1, m.id)
+			psStoreFile.setString(2, m.sha512)
+			psStoreFile.executeUpdate()
+			println("Updated store_instance_files for " + m.name)
+		}
+		psStoreFile.close()
+		
+		// 3. Update store_blobs
+		def psBlob = conn.prepareStatement("INSERT OR REPLACE INTO store_blobs (sha512, size, status, modified_as, created_at, last_used_at, verified_at, sources) VALUES (?, ?, 'ready', ?, ?, ?, ?, '[]')")
+		for (m in mods) {
+			psBlob.setString(1, m.sha512)
+			psBlob.setLong(2, m.size)
+			psBlob.setLong(3, nowNs)
+			psBlob.setLong(4, nowNs)
+			psBlob.setLong(5, nowNs)
+			psBlob.setLong(6, nowNs)
+			psBlob.executeUpdate()
+			println("Updated store_blobs for " + m.name)
+		}
+		psBlob.close()
+		
+		// 4. Update blob cache file
+		def blobDir = new File("C:/Users/jacqu/AppData/Roaming/ModrinthApp/blob_store")
+		for (m in mods) {
+			def prefix = m.sha512.substring(0, 2)
+			def targetDir = new File(blobDir, prefix)
+			targetDir.mkdirs()
+			def targetBlob = new File(targetDir, m.sha512)
+			if (!targetBlob.exists() || targetBlob.length() != m.size) {
+				def sourceFile = new File(m.path)
+				targetBlob.bytes = sourceFile.bytes
+				println("Created blob cache: " + targetBlob.absolutePath)
+			}
+		}
+		
+		// 5. Update profile modified time
+		stmt.executeUpdate("UPDATE instances SET modified = " + nowSec + " WHERE id = 'local:30283559-caa0-4a8a-8453-c9c2ac2bf3e4'")
+		
+		conn.commit()
+		conn.close()
+		println("Successfully synchronized Modrinth SQLite DB for bbs-crowd-addon!")
+	}
+}

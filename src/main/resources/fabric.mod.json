@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "bbs_crowd",
+  "version": "${version}",
+  "name": "BBS Crowd Addon",
+  "description": "Crowd animation, spawning, behavior, and formation addon for BBS Flow",
+  "authors": [
+    "busyflow"
+  ],
+  "contact": {
+    "homepage": "https://github.com/busyflow/bbs-crowd-addon",
+    "sources": "https://github.com/busyflow/bbs-crowd-addon"
+  },
+  "license": "MIT",
+  "icon": "assets/bbs_crowd/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "mchorse.bbs_crowd.BBSCrowdMod"
+    ],
+    "client": [
+      "mchorse.bbs_crowd.client.BBSCrowdModClient"
+    ]
+  },
+  "mixins": [
+    "bbs-crowd.mixins.json",
+    {
+      "config": "bbs-crowd.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "bbs": "*"
+  }
+}
