@@ -12,7 +12,9 @@
     "ReplayKeyframesCrowdMixin",
     "BBSSettingsCrowdMixin",
     "FilmManagerCrowdMixin",
-    "ActionPlayerCrowdMixin"
+    "ActionPlayerCrowdMixin",
+    "MobEntityCrowdMixin",
+    "HostileEntityCrowdMixin"
   ],
   "injectors": {
     "defaultRequire": 1

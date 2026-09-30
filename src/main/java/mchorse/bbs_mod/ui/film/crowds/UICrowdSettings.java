@@ -7,6 +7,7 @@ import mchorse.bbs_mod.film.replays.Replay;
 import mchorse.bbs_mod.forms.FormUtils;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.resources.Link;
+import mchorse.bbs_mod.network.ClientNetwork;
 import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ui.film.clips.area.AreaBrush;
 import mchorse.bbs_mod.ui.forms.UIFormPalette;
@@ -272,7 +273,15 @@ public class UICrowdSettings extends UIElement
     {
         if (this.crowd != null)
         {
+            this.crowd.preNotify();
             consumer.accept(this.crowd);
+            this.crowd.postNotify();
+
+            Film film = UIFilmPanel.getEditedFilm();
+            if (film != null)
+            {
+                ClientNetwork.sendSyncData(film.getId(), this.crowd);
+            }
 
             if (this.onEdit != null)
             {

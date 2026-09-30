@@ -3,10 +3,14 @@ package mchorse.bbs_crowd.mixin;
 import mchorse.bbs_crowd.network.CrowdServerNetwork;
 import mchorse.bbs_mod.actions.ActionPlayer;
 import mchorse.bbs_mod.actions.types.crowd.CrowdUtils;
+import mchorse.bbs_mod.utils.DataPath;
+import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.film.Film;
 import mchorse.bbs_mod.film.FilmExportState;
+import mchorse.bbs_mod.film.crowds.Crowd;
 import mchorse.bbs_mod.film.crowds.CrowdKeyframeRuntime;
 import mchorse.bbs_mod.film.crowds.CrowdReconciler;
+import mchorse.bbs_mod.film.crowds.Crowds;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -37,19 +41,60 @@ public class ActionPlayerCrowdMixin {
     @Unique
     private boolean bbs_crowd$crowdExportReadySent;
 
-    @Inject(method = "applyAction", at = @At("HEAD"))
-    private void bbs_crowd$applyCrowds(CallbackInfo ci) {
+    @Unique
+    private void bbs_crowd$reconcileNow() {
         if (this.film == null || this.world == null) {
             return;
         }
 
         this.bbs_crowd$crowds.reconcile(this.world, this.film, this.tick);
         CrowdKeyframeRuntime.apply(this.world, this.film, this.tick, this.actors);
+    }
+
+    @Inject(method = "applyAction", at = @At("HEAD"))
+    private void bbs_crowd$applyCrowds(CallbackInfo ci) {
+        this.bbs_crowd$reconcileNow();
 
         if (!this.bbs_crowd$crowdExportReadySent && this.serverPlayer != null && FilmExportState.isExporting(this.serverPlayer.getUuid())) {
             CrowdServerNetwork.sendCrowdPreloadReady(this.serverPlayer, this.film.getId());
             this.bbs_crowd$crowdExportReadySent = true;
         }
+    }
+
+    @Inject(method = "updateReplayEntities", at = @At("RETURN"))
+    private void bbs_crowd$onUpdateReplayEntities(CallbackInfo ci) {
+        this.bbs_crowd$reconcileNow();
+    }
+
+    @Inject(method = "resetActorsForRestart", at = @At("RETURN"))
+    private void bbs_crowd$onResetActors(CallbackInfo ci) {
+        this.bbs_crowd$reconcileNow();
+    }
+
+    @Inject(method = "goTo(II)V", at = @At("RETURN"))
+    private void bbs_crowd$onGoTo(int from, int tick, CallbackInfo ci) {
+        this.bbs_crowd$reconcileNow();
+    }
+
+    @Inject(method = "syncData", at = @At("HEAD"))
+    private void bbs_crowd$onSyncDataHead(DataPath key, BaseType data, CallbackInfo ci) {
+        if (this.film != null && key != null && key.size() >= 2 && "crowds".equals(key.strings.get(0))) {
+            try {
+                int index = Integer.parseInt(key.strings.get(1));
+                Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(this.film);
+                if (crowds != null) {
+                    while (crowds.getList().size() <= index) {
+                        crowds.add(new Crowd(String.valueOf(crowds.getList().size())));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Inject(method = "syncData", at = @At("RETURN"))
+    private void bbs_crowd$onSyncDataReturn(DataPath key, BaseType data, CallbackInfo ci) {
+        this.bbs_crowd$reconcileNow();
     }
 
     @Inject(method = "stop", at = @At("HEAD"))

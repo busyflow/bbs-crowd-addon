@@ -12,6 +12,8 @@ import mchorse.bbs_mod.ui.film.clips.area.AreaBrush;
 import mchorse.bbs_mod.ui.framework.elements.UIScrollView;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.BBSSettings;
+import mchorse.bbs_mod.actions.ActionState;
+import mchorse.bbs_mod.network.ClientNetwork;
 import mchorse.bbs_mod.ui.framework.UIContext;
 import mchorse.bbs_mod.ui.utils.ScrollDirection;
 import mchorse.bbs_mod.ui.utils.UIConstants;
@@ -89,6 +91,21 @@ public class UICrowdReplayProperties extends UIScrollView
         this.bindCrowd();
         this.refresh();
 
+        Film film = UIFilmPanel.getEditedFilm();
+        if (film != null)
+        {
+            mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
+            if (crowds != null)
+            {
+                ClientNetwork.sendSyncData(film.getId(), crowds);
+            }
+            if (this.replay != null)
+            {
+                ClientNetwork.sendSyncData(film.getId(), this.replay.form);
+            }
+            this.filmPanel.notifyServer(ActionState.SEEK);
+        }
+
         /* The settings sub-panel starts collapsed and is flipped visible by refresh() above; without
          * relaying out here its rows keep the zero-height areas they were given while hidden, so only
          * the two rows this panel owns directly (crowd + New crowd) show. It used to take an unrelated
@@ -120,6 +137,14 @@ public class UICrowdReplayProperties extends UIScrollView
         crowd.name.set("Crowd " + crowds.getList().size());
 
         this.form.crowd.set(crowd.crowdTag.get());
+
+        if (this.replay != null)
+        {
+            this.replay.form.preNotify();
+            this.replay.form.postNotify();
+            ClientNetwork.sendSyncData(film.getId(), this.replay.form);
+        }
+        ClientNetwork.sendSyncData(film.getId(), crowds);
     }
 
     private void refresh()
@@ -160,6 +185,14 @@ public class UICrowdReplayProperties extends UIScrollView
         {
             channels.crowdPaint.insert(cursor, paint);
             channels.crowdPaint.postNotify();
+
+            Film film = UIFilmPanel.getEditedFilm();
+            if (film != null)
+            {
+                ClientNetwork.sendSyncData(film.getId(), channels.crowdPaint);
+                ClientNetwork.sendSyncData(film.getId(), crowd);
+                ClientNetwork.sendSyncData(film.getId(), this.replay.form);
+            }
         }
 
         if (this.filmPanel.replayEditor != null)
@@ -171,6 +204,8 @@ public class UICrowdReplayProperties extends UIScrollView
         {
             this.onEdit.run();
         }
+
+        this.filmPanel.notifyServer(ActionState.SEEK);
     }
 
     @Override

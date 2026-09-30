@@ -11,7 +11,8 @@
     "UIFilmControllerCrowdMixin",
     "WorldVideoExportSessionCrowdMixin",
     "PanelVideoExportSessionCrowdMixin",
-    "FilmsCrowdMixin"
+    "FilmsCrowdMixin",
+    "UITimelinePanelCrowdMixin"
   ],
   "injectors": {
     "defaultRequire": 1

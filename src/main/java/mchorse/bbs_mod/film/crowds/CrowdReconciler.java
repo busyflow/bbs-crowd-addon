@@ -130,14 +130,21 @@ public class CrowdReconciler
     private boolean driven(Film film, Crowd crowd)
     {
         String tag = crowd.crowdTag.get();
+        Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
 
         for (Replay replay : film.replays.getList())
         {
-            if (replay.form.get() instanceof mchorse.bbs_mod.forms.forms.CrowdForm form
-                && form.crowd.get().equals(tag)
-                && replay.enabled.get())
+            if (replay.form.get() instanceof mchorse.bbs_mod.forms.forms.CrowdForm form && replay.enabled.get())
             {
-                return true;
+                String formCrowd = form.crowd.get();
+                if (formCrowd.equals(tag))
+                {
+                    return true;
+                }
+                if (formCrowd.isEmpty() && (replay.getId().equals(tag) || (crowds != null && crowds.getList().size() == 1)))
+                {
+                    return true;
+                }
             }
         }
 
