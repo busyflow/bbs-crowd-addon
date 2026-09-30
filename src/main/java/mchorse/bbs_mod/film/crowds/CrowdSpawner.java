@@ -15,12 +15,13 @@ import mchorse.bbs_mod.film.replays.Replay;
 import mchorse.bbs_mod.forms.FormUtils;
 import mchorse.bbs_mod.forms.forms.CrowdForm;
 import mchorse.bbs_mod.forms.forms.Form;
+import mchorse.bbs_crowd.BBSCrowdMod;
 import mchorse.bbs_crowd.CrowdSettings;
 import mchorse.bbs_crowd.access.ReplayCrowdChannels;
 import mchorse.bbs_crowd.network.CrowdServerNetwork;
-import mchorse.bbs_mod.resources.Link;
-import mchorse.bbs_mod.settings.values.base.BaseValue;
-import mchorse.bbs_mod.settings.values.core.ValueLink;
+import mchorse.bbs_mod.network.ServerNetwork;
+import net.minecraft.server.network.ServerPlayerEntity;
+import java.util.UUID;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityData;
@@ -185,7 +186,13 @@ public class CrowdSpawner
                 entity = mob;
             }
 
-            entity.setUuid(CrowdUtils.deterministicUuid(film, tag, crowd.seed.get(), i));
+            UUID uuid = CrowdUtils.deterministicUuid(film, tag, crowd.seed.get(), i);
+            Entity existing = world.getEntity(uuid);
+            if (existing != null)
+            {
+                existing.discard();
+            }
+            entity.setUuid(uuid);
 
             Vec3d spawn = findSpawnPoint(world, crowd, entity, center, formation, area, i, count, spacing, surfaceCache);
 
@@ -242,8 +249,22 @@ public class CrowdSpawner
                 entity.setSilent(true);
             }
 
-            world.spawnEntity(entity);
-            spawned.add(entity.getId());
+            if (world.spawnEntity(entity))
+            {
+                spawned.add(entity.getId());
+
+                if (entity instanceof ActorEntity actorEntity)
+                {
+                    for (ServerPlayerEntity player : world.getPlayers())
+                    {
+                        ServerNetwork.sendEntityForm(player, actorEntity);
+                    }
+                }
+            }
+            else
+            {
+                BBSCrowdMod.LOGGER.warn("[BBS-CROWD] world.spawnEntity returned false for crowd member {} of crowd {}", i, tag);
+            }
         }
 
         /* Tell the clients who these are as soon as they exist, rather than leaving it to the
@@ -254,6 +275,8 @@ public class CrowdSpawner
         {
             CrowdServerNetwork.sendCrowdMembers(world, spawned);
         }
+
+        BBSCrowdMod.LOGGER.info("[BBS-CROWD] Spawned {}/{} members for crowd '{}' (tag={})", spawned.size(), spawnCount, crowd.getDisplayName(), tag);
 
         return spawned.size();
     }
@@ -440,7 +463,12 @@ public class CrowdSpawner
             }
         }
 
-        return crowd.skipUnsafe.get() ? null : fallback;
+        if (!crowd.skipUnsafe.get() || (formation == CrowdFormation.PAINT && fallback != null))
+        {
+            return fallback;
+        }
+
+        return null;
     }
 
     private static Vec3d getOffset(Crowd crowd, CrowdFormation formation, int index, int count, double spacing, int attempt)
@@ -468,7 +496,7 @@ public class CrowdSpawner
         {
             for (int cz = (int) Math.floor(spawn.z - halfWidth) >> 4; cz <= (int) Math.floor(spawn.z + halfWidth) >> 4; cz++)
             {
-                if (world.getChunk(cx, cz, ChunkStatus.FULL, false) == null)
+                if (!world.getChunkManager().isChunkLoaded(cx, cz))
                 {
                     return false;
                 }
@@ -566,7 +594,7 @@ public class CrowdSpawner
          * Skipping the member instead simply leaves the crowd's edge at the loaded boundary.
          * A chunk part-way through generation counts as loaded but is not free to read, so ask
          * for a finished one and accept its absence rather than waiting for it. */
-        if (world.getChunk(bx >> 4, bz >> 4, ChunkStatus.FULL, false) == null)
+        if (!world.getChunkManager().isChunkLoaded(bx >> 4, bz >> 4))
         {
             return null;
         }

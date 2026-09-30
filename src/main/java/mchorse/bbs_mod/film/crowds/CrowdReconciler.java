@@ -3,11 +3,13 @@ package mchorse.bbs_mod.film.crowds;
 import mchorse.bbs_mod.actions.types.crowd.CrowdUtils;
 import mchorse.bbs_mod.film.Film;
 import mchorse.bbs_mod.film.replays.Replay;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +76,23 @@ public class CrowdReconciler
 
             if (live != null && live == signature)
             {
-                continue;
+                if (tick % 20 == 0)
+                {
+                    List<LivingEntity> liveMembers = CrowdUtils.getCrowd(world, film, crowd.crowdTag.get(), Vec3d.ZERO, 0D);
+                    if (liveMembers.isEmpty())
+                    {
+                        live = null;
+                        this.spawned.remove(id);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
             }
 
             /* Edited while standing there - the members are in the wrong places or are the wrong
@@ -86,8 +104,15 @@ public class CrowdReconciler
                 this.despawn(world, film, crowd, id);
             }
 
-            CrowdSpawner.spawn(world, film, crowd, this.center(film, crowd, tick), tick);
-            this.spawned.put(id, signature);
+            int placed = CrowdSpawner.spawn(world, film, crowd, this.center(film, crowd, tick), tick);
+            if (placed > 0)
+            {
+                this.spawned.put(id, signature);
+            }
+            else
+            {
+                this.spawned.remove(id);
+            }
         }
 
         /* A crowd deleted from the film mid-playback leaves members behind that nothing owns

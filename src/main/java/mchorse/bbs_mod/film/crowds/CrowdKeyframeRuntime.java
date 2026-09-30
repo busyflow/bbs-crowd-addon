@@ -499,7 +499,7 @@ public class CrowdKeyframeRuntime
         int blockX = MathHelper.floor(x);
         int blockZ = MathHelper.floor(z);
 
-        if (world.getChunk(blockX >> 4, blockZ >> 4, ChunkStatus.FULL, false) == null)
+        if (!world.getChunkManager().isChunkLoaded(blockX >> 4, blockZ >> 4))
         {
             return fallback;
         }

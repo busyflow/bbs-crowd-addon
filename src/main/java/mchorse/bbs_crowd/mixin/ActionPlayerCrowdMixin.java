@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
@@ -51,6 +52,11 @@ public class ActionPlayerCrowdMixin {
         CrowdKeyframeRuntime.apply(this.world, this.film, this.tick, this.actors);
     }
 
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void bbs_crowd$onTick(CallbackInfoReturnable<Boolean> cir) {
+        this.bbs_crowd$reconcileNow();
+    }
+
     @Inject(method = "applyAction", at = @At("HEAD"))
     private void bbs_crowd$applyCrowds(CallbackInfo ci) {
         this.bbs_crowd$reconcileNow();
@@ -64,6 +70,11 @@ public class ActionPlayerCrowdMixin {
     @Inject(method = "updateReplayEntities", at = @At("RETURN"))
     private void bbs_crowd$onUpdateReplayEntities(CallbackInfo ci) {
         this.bbs_crowd$reconcileNow();
+    }
+
+    @Inject(method = "resetActorsForRestart", at = @At("HEAD"))
+    private void bbs_crowd$onResetActorsHead(CallbackInfo ci) {
+        this.bbs_crowd$crowds.forget();
     }
 
     @Inject(method = "resetActorsForRestart", at = @At("RETURN"))
