@@ -13,7 +13,9 @@ import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
-/** Which behaviour the crowd runs from this keyframe on, and how fast / jumpy. */
+/**
+ * Apple/1UI-grade keyframe editor for crowd autonomous behavior modes.
+ */
 public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehavior>
 {
     private final UIButton mode;
@@ -30,21 +32,23 @@ public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehav
         }
 
         this.mode = new UIButton(IKey.EMPTY, (b) -> this.openModeMenu());
-        this.mode.tooltip(IKey.constant("What the crowd does from here until the next behaviour keyframe.\n\nStand still, Walk (Motion Path), Wander (normal mob roaming), Run around, or Freak out (sprint and jump off in new directions)."));
+        this.mode.tooltip(IKey.constant("What the crowd does from here until the next behavior keyframe.\n\n- Stand still\n- Walk (Motion Path)\n- Wander (mob roaming)\n- Run around\n- Freak out (sprint & panic jumps)"));
 
         this.speed = new UITrackpad((value) -> this.edit((behavior) -> behavior.speed = value.floatValue()));
         this.speed.limit(0D, 20D).increment(0.1D).values(0.1D, 0.05D, 1D);
-        this.speed.tooltip(IKey.constant("Blocks per second. 0 uses the mode's own default (walking ~4.3, sprinting ~5.6)."));
+        this.speed.tooltip(IKey.constant("Movement speed in blocks per second (0 uses mode defaults: ~4.3 walk, ~5.6 sprint)."));
 
         this.jumpRate = new UITrackpad((value) -> this.edit((behavior) -> behavior.jumpRate = value.floatValue()));
         this.jumpRate.limit(0D, 5D).increment(0.1D).values(0.1D, 0.05D, 0.5D);
-        this.jumpRate.tooltip(IKey.constant("Jumps per member per second while moving. 0 is never. Freak out jumps on its own if left at 0."));
+        this.jumpRate.tooltip(IKey.constant("Jumps per member per second while moving (0 disables jumping)."));
 
         UIElement content = UI.column(
-            UI.label(IKey.constant("Crowd behaviour")),
-            UI.labelRow(IKey.constant("Mode"), this.mode).marginTop(UIConstants.SECTION_GAP),
-            UI.labelRow(IKey.constant("Speed"), this.speed),
-            UI.labelRow(IKey.constant("Jump rate"), this.jumpRate)
+            UIConstants.MARGIN,
+            UI.label(IKey.constant("Crowd Behavior")),
+            UI.label(IKey.constant("Controls how crowd members act, steer, or roam from this keyframe.")),
+            UI.labelRow(IKey.constant("Behavior Mode"), this.mode).marginTop(UIConstants.SECTION_GAP),
+            UI.labelRow(IKey.constant("Speed (m/s)"), this.speed),
+            UI.labelRow(IKey.constant("Jump Frequency"), this.jumpRate)
         );
 
         this.scroll.add(content);
@@ -73,7 +77,6 @@ public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehav
         if (behavior == null)
         {
             behavior = new CrowdBehavior();
-
             this.keyframe.setValue(behavior);
         }
 

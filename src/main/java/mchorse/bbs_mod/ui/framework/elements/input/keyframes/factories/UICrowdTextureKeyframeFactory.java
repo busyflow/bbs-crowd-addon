@@ -11,15 +11,23 @@ import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIFolderOverlayPanel;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay;
 import mchorse.bbs_mod.ui.utils.UI;
+import mchorse.bbs_mod.ui.utils.UIConstants;
+import mchorse.bbs_mod.utils.colors.Colors;
 import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
-/** Discrete crowd texture editor with explicit-texture and random-folder modes. */
+/**
+ * Apple/1UI-grade discrete crowd texture editor with explicit texture and random folder modes.
+ */
 public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTexture>
 {
     private final UIToggle random;
     private final UIToggle recursive;
     private final UIButton texture;
+    private final UIButton clearTexture;
+    private final UIElement textureRow;
     private final UIButton folder;
+    private final UIButton clearFolder;
+    private final UIElement folderRow;
     private final UIElement content;
 
     public UICrowdTextureKeyframeFactory(Keyframe<CrowdTexture> keyframe, UIKeyframes editor)
@@ -34,20 +42,45 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
         keyframe.setDuration(0F);
         this.duration.setVisible(false);
 
-        this.random = new UIToggle(IKey.constant("Random textures from folder"), b ->
+        this.random = new UIToggle(IKey.constant("Randomize from Folder"), b ->
         {
             this.edit(v -> v.random = b.getValue());
             this.refresh();
         });
-        this.recursive = new UIToggle(IKey.constant("Include texture subfolders"), b -> this.edit(v -> v.recursive = b.getValue()));
+        this.random.tooltip(IKey.constant("When checked, randomly distributes textures from a folder across members.\nWhen unchecked, applies a single specific texture to the crowd."));
+
         this.texture = new UIButton(IKey.EMPTY, b -> this.pickTexture());
+        this.texture.tooltip(IKey.constant("Select a specific texture/skin for the crowd."));
+        this.clearTexture = new UIButton(IKey.constant("X"), b ->
+        {
+            this.edit(v -> v.texture = null);
+            this.refresh();
+        });
+        this.clearTexture.tooltip(IKey.constant("Clear texture selection"));
+        this.clearTexture.color(Colors.NEGATIVE);
+        this.textureRow = UI.row(4, this.texture, this.clearTexture.w(24));
+
         this.folder = new UIButton(IKey.EMPTY, b -> this.pickFolder());
+        this.folder.tooltip(IKey.constant("Pick a folder of textures to assign deterministically across members."));
+        this.clearFolder = new UIButton(IKey.constant("X"), b ->
+        {
+            this.edit(v -> v.folder = null);
+            this.refresh();
+        });
+        this.clearFolder.tooltip(IKey.constant("Clear folder selection"));
+        this.clearFolder.color(Colors.NEGATIVE);
+        this.folderRow = UI.row(4, this.folder, this.clearFolder.w(24));
+
+        this.recursive = new UIToggle(IKey.constant("Include Subfolders"), b -> this.edit(v -> v.recursive = b.getValue()));
+        this.recursive.tooltip(IKey.constant("Scan and include textures contained in nested subdirectories."));
+
         this.content = UI.column(
+            UIConstants.MARGIN,
             UI.label(IKey.constant("Crowd Texture")),
-            UI.label(IKey.constant("The selected texture state begins exactly on this keyframe.")),
-            this.random,
-            this.texture,
-            this.folder,
+            UI.label(IKey.constant("Texture modifications take effect immediately at this keyframe.")),
+            this.random.marginTop(UIConstants.SECTION_GAP),
+            this.textureRow,
+            this.folderRow,
             this.recursive
         );
 
@@ -111,11 +144,14 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
 
         this.random.setValue(value.random);
         this.recursive.setValue(value.recursive);
-        this.texture.label = IKey.constant(selectedTexture == null ? "Choose texture..." : selectedTexture.toString());
-        this.folder.label = IKey.constant(selectedFolder == null ? "Choose random texture folder..." : selectedFolder.toString());
-        this.texture.setVisible(!value.random);
-        this.folder.setVisible(value.random);
+
+        this.texture.label = IKey.constant(selectedTexture == null ? "Select texture..." : selectedTexture.toString());
+        this.folder.label = IKey.constant(selectedFolder == null ? "Select texture folder..." : selectedFolder.toString());
+
+        this.textureRow.setVisible(!value.random);
+        this.folderRow.setVisible(value.random);
         this.recursive.setVisible(value.random);
+
         this.content.resize();
         this.scroll.resize();
     }

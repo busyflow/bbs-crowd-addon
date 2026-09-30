@@ -52,8 +52,8 @@ public class UIReplaysEditorCrowdMixin {
     @Unique
     private boolean bbs_crowd$crowdIsShown;
 
-    @Inject(method = "setReplay", at = @At("RETURN"))
-    private void bbs_crowd$onSetReplay(Replay replay, CallbackInfo ci) {
+    @Inject(method = "setReplay(Lmchorse/bbs_mod/film/replays/Replay;ZLmchorse/bbs_mod/ui/film/replays/UIReplaysEditor$OrbitReaction;)V", at = @At("RETURN"))
+    private void bbs_crowd$onSetReplay(Replay replay, boolean select, UIReplaysEditor.OrbitReaction orbit, CallbackInfo ci) {
         this.bbs_crowd$updateCrowdProperties(replay);
     }
 
@@ -127,6 +127,7 @@ public class UIReplaysEditorCrowdMixin {
 
         if (this.bbs_crowd$crowdProperties != null) {
             this.bbs_crowd$crowdIsShown = this.bbs_crowd$crowdProperties.setReplay(replay);
+            this.bbs_crowd$updateCrowdPropertiesVisibility();
         }
     }
 

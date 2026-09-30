@@ -8,15 +8,13 @@ import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UIPropTransform;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
-import mchorse.bbs_mod.ui.utils.Gizmo;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.utils.keyframes.Keyframe;
 import mchorse.bbs_mod.utils.pose.Transform;
 
 /**
- * Editor for one crowd walk waypoint. Drag its gizmo in the viewport to place where the crowd
- * should be; move the keyframe on the timeline to say when it gets there.
+ * Apple/1UI-grade keyframe editor for crowd walk waypoints.
  */
 public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
 {
@@ -49,19 +47,32 @@ public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
         this.duration.setVisible(false);
 
         this.x = trackpad(-10000D, 10000D, 0.25D, v -> this.edit(p -> p.x = v.floatValue()));
+        this.x.tooltip(IKey.constant("Waypoint X coordinate in blocks."));
         this.y = trackpad(-10000D, 10000D, 0.25D, v -> this.edit(p -> p.y = v.floatValue()));
+        this.y.tooltip(IKey.constant("Waypoint Y coordinate in blocks."));
         this.z = trackpad(-10000D, 10000D, 0.25D, v -> this.edit(p -> p.z = v.floatValue()));
+        this.z.tooltip(IKey.constant("Waypoint Z coordinate in blocks."));
+
         this.stagger = trackpad(0D, 1D, 0.05D, v -> this.edit(p -> p.stagger = v.floatValue()));
+        this.stagger.tooltip(IKey.constant("Departure stagger: 0 moves members in unison; 1 spreads start timing across members."));
+
         this.spread = trackpad(0D, 1D, 0.05D, v -> this.edit(p -> p.spread = v.floatValue()));
+        this.spread.tooltip(IKey.constant("Formation expansion during transit (returns to exact formation at destination)."));
 
-        this.run = new UIToggle(IKey.constant("Run"), b -> this.edit(p -> p.run = b.getValue()));
-        this.faceTravel = new UIToggle(IKey.constant("Face direction of travel"), b -> this.edit(p -> p.faceTravel = b.getValue()));
-        this.terrain = new UIToggle(IKey.constant("Follow terrain (uphill/downhill)"), b -> this.edit(p -> p.terrainFollow = b.getValue()));
-        this.showPath = new UIToggle(IKey.constant("Show walk path"), b -> this.edit(p -> p.showPath = b.getValue()));
-        this.showPoint = new UIToggle(IKey.constant("Show timeline points"), b -> this.edit(p -> p.showPoint = b.getValue()));
+        this.faceTravel = new UIToggle(IKey.constant("Face Direction of Travel"), b -> this.edit(p -> p.faceTravel = b.getValue()));
+        this.faceTravel.tooltip(IKey.constant("Rotate member headings towards their motion vector."));
 
-        this.stagger.tooltip(IKey.constant("How ragged the crowd is about setting off.\n\n0 moves them as one block. 1 spreads them over about three ticks, so some are a step behind for the whole walk and arrive a step late."));
-        this.spread.tooltip(IKey.constant("How much the formation loosens halfway. Exact shape at both ends."));
+        this.terrain = new UIToggle(IKey.constant("Follow Terrain Contours"), b -> this.edit(p -> p.terrainFollow = b.getValue()));
+        this.terrain.tooltip(IKey.constant("Adhere member elevations to uphill/downhill surface contours."));
+
+        this.run = new UIToggle(IKey.constant("Run (Sprint)"), b -> this.edit(p -> p.run = b.getValue()));
+        this.run.tooltip(IKey.constant("Sprint towards this waypoint at high speed."));
+
+        this.showPath = new UIToggle(IKey.constant("Show Walk Path"), b -> this.edit(p -> p.showPath = b.getValue()));
+        this.showPath.tooltip(IKey.constant("Render walk path spline in the 3D viewport."));
+
+        this.showPoint = new UIToggle(IKey.constant("Show Waypoint Marker"), b -> this.edit(p -> p.showPoint = b.getValue()));
+        this.showPoint.tooltip(IKey.constant("Render waypoint marker and gizmo in the 3D viewport."));
 
         this.transform.callbacks(
             () -> this.keyframe.preNotify(),
@@ -75,17 +86,13 @@ public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
         );
         this.transform.enableTranslateHotkeys();
 
-        /* 2.5 pinned the gizmo to translate-axes here, since a walk point has no scale or
-         * rotation for the other handles to drive. 2.6's gizmo is modeless: which handles show
-         * is read straight off BBSSettings.gizmoShow* per element, and nothing may override it
-         * for one editor. Forcing those settings would change them everywhere else too, so the
-         * walk point is dragged with whatever handles the user has left visible. */
-
         this.content = UI.column(
-            UI.label(IKey.constant("Crowd Walk Point")),
-            UI.label(IKey.constant("The crowd stands here on this keyframe and walks to the next one.")),
-            UI.labelRow(IKey.constant("Stagger"), this.stagger).marginTop(UIConstants.SECTION_GAP),
-            UI.labelRow(IKey.constant("Spread"), this.spread),
+            UIConstants.MARGIN,
+            UI.label(IKey.constant("Crowd Walk Waypoint")),
+            UI.label(IKey.constant("Members navigate to this destination waypoint over the timeline.")),
+            UI.labelRow(IKey.constant("Position (X/Y/Z)"), UI.row(4, this.x, this.y, this.z)).marginTop(UIConstants.SECTION_GAP),
+            UI.labelRow(IKey.constant("Departure Stagger"), this.stagger),
+            UI.labelRow(IKey.constant("Transit Spread"), this.spread),
             this.faceTravel.marginTop(UIConstants.SECTION_GAP),
             this.terrain,
             this.run,
@@ -94,7 +101,6 @@ public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
         );
         this.scroll.add(this.content);
 
-        /* Keep the gizmo controller attached to the editor but outside the scroll layout. */
         this.transform.setVisible(false);
         this.add(this.transform);
         this.display(true);
@@ -110,20 +116,18 @@ public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
         return this.keyframe.getValue();
     }
 
-    public Keyframe<CrowdWalk> getMotionKeyframe()
-    {
-        return this.keyframe;
-    }
-
     private void edit(java.util.function.Consumer<CrowdWalk> consumer)
     {
-        if (this.syncing)
+        CrowdWalk point = this.getPath();
+
+        if (point == null)
         {
-            return;
+            point = new CrowdWalk();
+            this.keyframe.setValue(point);
         }
 
         this.keyframe.preNotify();
-        consumer.accept(this.getPath());
+        consumer.accept(point);
         this.keyframe.postNotify();
         this.display(true);
     }
@@ -186,8 +190,6 @@ public class UICrowdWalkKeyframeFactory extends UIKeyframeFactory<CrowdWalk>
     public void update()
     {
         super.update();
-        /* Never reload the edited transform during a live gizmo gesture. Doing so
-         * races the overlay handler and makes the handle appear pinned in place. */
         this.display(!this.transform.isEditing());
     }
 }

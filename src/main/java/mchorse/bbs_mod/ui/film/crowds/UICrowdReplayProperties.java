@@ -11,6 +11,8 @@ import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import mchorse.bbs_mod.ui.film.clips.area.AreaBrush;
 import mchorse.bbs_mod.ui.framework.elements.UIScrollView;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
+import mchorse.bbs_mod.BBSSettings;
+import mchorse.bbs_mod.ui.framework.UIContext;
 import mchorse.bbs_mod.ui.utils.ScrollDirection;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 
@@ -169,5 +171,16 @@ public class UICrowdReplayProperties extends UIScrollView
         {
             this.onEdit.run();
         }
+    }
+
+    @Override
+    public void render(UIContext context)
+    {
+        if (this.isVisible())
+        {
+            this.area.render(context.batcher, BBSSettings.baseSurface());
+        }
+
+        super.render(context);
     }
 }

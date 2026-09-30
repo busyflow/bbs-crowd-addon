@@ -10,12 +10,13 @@ import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
 import mchorse.bbs_mod.ui.framework.elements.utils.UILabel;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
+import mchorse.bbs_mod.utils.colors.Colors;
 import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
 /**
- * Keyframe editor for a painted crowd formation.
+ * Apple/1UI-grade keyframe editor for painted crowd ground formations.
  */
 public class UICrowdPaintKeyframeFactory extends UIKeyframeFactory<CrowdPaint>
 {
@@ -36,28 +37,36 @@ public class UICrowdPaintKeyframeFactory extends UIKeyframeFactory<CrowdPaint>
         }
 
         this.blockCount = UI.label(IKey.constant("0 blocks painted"));
+
         this.stagger = new UITrackpad((value) -> this.edit((p) -> p.stagger = value.floatValue()));
         this.stagger.limit(0D, 1D).increment(0.05D).values(0.05D, 0.01D, 0.2D);
-        this.stagger.tooltip(IKey.constant("How ragged the crowd is about moving into this formation."));
+        this.stagger.tooltip(IKey.constant("Departure stagger: how ragged the crowd is about moving into this painted formation."));
 
         this.spread = new UITrackpad((value) -> this.edit((p) -> p.spread = value.floatValue()));
         this.spread.limit(0D, 1D).increment(0.05D).values(0.05D, 0.01D, 0.2D);
-        this.spread.tooltip(IKey.constant("How much the formation loosens or breathes while traveling."));
+        this.spread.tooltip(IKey.constant("Formation expansion / breathing room while traveling into this shape."));
 
-        this.terrain = new UIToggle(IKey.constant("Follow terrain"), (b) -> this.edit((p) -> p.terrainFollow = b.getValue()));
-        this.run = new UIToggle(IKey.constant("Run"), (b) -> this.edit((p) -> p.run = b.getValue()));
+        this.terrain = new UIToggle(IKey.constant("Follow Terrain Contours"), (b) -> this.edit((p) -> p.terrainFollow = b.getValue()));
+        this.terrain.tooltip(IKey.constant("Adhere member elevations to uphill/downhill surface contours."));
 
-        this.clear = new UIButton(IKey.constant("Clear painted blocks"), (b) ->
+        this.run = new UIToggle(IKey.constant("Run (Sprint)"), (b) -> this.edit((p) -> p.run = b.getValue()));
+        this.run.tooltip(IKey.constant("Sprint into position towards this painted formation."));
+
+        this.clear = new UIButton(IKey.constant("Clear Painted Blocks"), (b) ->
         {
             this.edit((p) -> p.getCells().clear());
         });
+        this.clear.tooltip(IKey.constant("Remove all painted blocks stored on this keyframe."));
+        this.clear.color(Colors.NEGATIVE);
 
         UIElement content = UI.column(
+            UIConstants.MARGIN,
             UI.label(IKey.constant("Crowd Painted Formation")),
+            UI.label(IKey.constant("Keyframe formation defined by hand-painted terrain cells.")),
             this.blockCount.marginTop(UIConstants.SECTION_GAP),
-            UI.labelRow(IKey.constant("Stagger"), this.stagger).marginTop(UIConstants.SECTION_GAP),
-            UI.labelRow(IKey.constant("Spread"), this.spread),
-            UI.row(1, this.terrain, this.run).marginTop(UIConstants.SECTION_GAP),
+            UI.labelRow(IKey.constant("Transition Stagger"), this.stagger),
+            UI.labelRow(IKey.constant("Transit Spread"), this.spread),
+            UI.row(4, this.terrain, this.run).marginTop(UIConstants.SECTION_GAP),
             this.clear.marginTop(UIConstants.SECTION_GAP)
         );
 

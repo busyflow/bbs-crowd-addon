@@ -12,7 +12,9 @@ import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
-/** How much of the crowd is jumping at this keyframe. */
+/**
+ * Apple/1UI-grade keyframe editor for crowd jumping dynamics.
+ */
 public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
 {
     private final UITrackpad amount;
@@ -30,19 +32,21 @@ public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
 
         this.amount = new UITrackpad((value) -> this.edit((jump) -> jump.amount = value.floatValue()));
         this.amount.limit(0D, 1D).increment(0.05D).values(0.05D, 0.01D, 0.2D);
-        this.amount.tooltip(IKey.constant("How much of the crowd jumps at all.\n\n0.55 means the same 55% of members jump and the rest stand and watch. Raising it adds jumpers to the ones already going."));
+        this.amount.tooltip(IKey.constant("Share of the crowd that participates in jumps (0.0 = none, 1.0 = everyone)."));
 
         this.rate = new UITrackpad((value) -> this.edit((jump) -> jump.rate = value.floatValue()));
         this.rate.limit(0D, 1D).increment(0.05D).values(0.05D, 0.01D, 0.2D);
-        this.rate.tooltip(IKey.constant("How often those members jump.\n\n0 is one jump each. 1 is straight back up the moment they land. In between is how long they stand around before going again."));
+        this.rate.tooltip(IKey.constant("Jump frequency: 0.0 is one jump per member; 1.0 jumps immediately upon landing."));
 
-        this.random = new UIToggle(IKey.constant("Random"), (b) -> this.edit((jump) -> jump.random = b.getValue()));
-        this.random.tooltip(IKey.constant("Vary each member's jump height and how long it takes.\n\nOff, everyone jumps exactly the same height at the same speed - they are already out of step with each other, but identical arcs read as a machine rather than a crowd."));
+        this.random = new UIToggle(IKey.constant("Organic Variation"), (b) -> this.edit((jump) -> jump.random = b.getValue()));
+        this.random.tooltip(IKey.constant("Vary jump height and duration across members so arcs appear natural rather than synchronized."));
 
         UIElement content = UI.column(
-            UI.label(IKey.constant("Crowd Jump")),
-            UI.labelRow(IKey.constant("How many"), this.amount).marginTop(UIConstants.SECTION_GAP),
-            UI.labelRow(IKey.constant("Rate"), this.rate),
+            UIConstants.MARGIN,
+            UI.label(IKey.constant("Crowd Jump Dynamics")),
+            UI.label(IKey.constant("Configures jumping participation and jump frequencies from this keyframe.")),
+            UI.labelRow(IKey.constant("Jumping Share"), this.amount).marginTop(UIConstants.SECTION_GAP),
+            UI.labelRow(IKey.constant("Jump Frequency"), this.rate),
             this.random.marginTop(UIConstants.SECTION_GAP)
         );
 
@@ -57,7 +61,6 @@ public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
         if (jump == null)
         {
             jump = new CrowdJump();
-
             this.keyframe.setValue(jump);
         }
 
