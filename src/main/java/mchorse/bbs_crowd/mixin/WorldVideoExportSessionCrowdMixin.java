@@ -19,15 +19,20 @@ public class WorldVideoExportSessionCrowdMixin {
 
     @Inject(method = "start", at = @At("HEAD"))
     private void bbs_crowd$onStart(String filmId, Film film, CallbackInfoReturnable<Boolean> cir) {
-        if (filmId != null) {
-            CrowdExportPreload.begin(filmId);
+        if (filmId != null && film != null && mchorse.bbs_crowd.CrowdSettings.isCrowdExportFull()) {
+            mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
+            if (crowds != null && !crowds.getList().isEmpty()) {
+                CrowdExportPreload.begin(filmId);
+            }
         }
     }
 
     @Inject(method = "isWarmupReady", at = @At("HEAD"), cancellable = true)
     private void bbs_crowd$onIsWarmupReady(CallbackInfoReturnable<Boolean> cir) {
-        if (this.filmId != null && this.firstTickPaused) {
-            cir.setReturnValue(CrowdExportPreload.isReady(this.filmId));
+        if (this.filmId != null && this.firstTickPaused && mchorse.bbs_crowd.CrowdSettings.isCrowdExportFull()) {
+            if (!CrowdExportPreload.isReady(this.filmId)) {
+                cir.setReturnValue(false);
+            }
         }
     }
 

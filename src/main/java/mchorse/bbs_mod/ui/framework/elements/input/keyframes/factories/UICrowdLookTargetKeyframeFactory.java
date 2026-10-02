@@ -10,11 +10,11 @@ import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
+import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UITrackValue;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
 import mchorse.bbs_mod.utils.colors.Colors;
-import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 /**
  * Apple/1UI-grade keyframe editor for Crowd Look Target.
@@ -30,9 +30,9 @@ public class UICrowdLookTargetKeyframeFactory extends UIKeyframeFactory<String>
     private final UIToggle pitch;
     private final UIToggle bodyYaw;
 
-    public UICrowdLookTargetKeyframeFactory(Keyframe<String> keyframe, UIKeyframes editor)
+    public UICrowdLookTargetKeyframeFactory(UITrackValue<String> track, UIKeyframes editor)
     {
-        super(keyframe, editor);
+        super(track, editor);
 
         this.target = new UIButton(IKey.EMPTY, (button) -> this.openTargetPicker());
         this.target.tooltip(IKey.constant("Pick a replay that crowd members look at."));
@@ -71,13 +71,13 @@ public class UICrowdLookTargetKeyframeFactory extends UIKeyframeFactory<String>
     {
         UIFilmPanel panel = this.getParent(UIFilmPanel.class);
 
-        return panel == null ? null : panel.getData();
+        return panel == null ? mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm() : panel.getData();
     }
 
     private void updateTargetLabel()
     {
         Film film = this.getFilm();
-        String replayId = CrowdLookTarget.parse(this.keyframe.getValue()).replayId();
+        String replayId = CrowdLookTarget.parse(this.track.getValue()).replayId();
         Replay replay = film == null ? null : (Replay) film.replays.get(replayId);
 
         this.target.label = IKey.constant(replay == null ? "Select target replay..." : replay.getName());
@@ -104,14 +104,14 @@ public class UICrowdLookTargetKeyframeFactory extends UIKeyframeFactory<String>
                 String label = replay.getName();
 
                 menu.action(Icons.FILM, IKey.constant(label),
-                    id.equals(CrowdLookTarget.parse(this.keyframe.getValue()).replayId()), () -> this.pickTarget(id));
+                    id.equals(CrowdLookTarget.parse(this.track.getValue()).replayId()), () -> this.pickTarget(id));
             }
         });
     }
 
     private void pickTarget(String replayId)
     {
-        CrowdLookTarget value = CrowdLookTarget.parse(this.keyframe.getValue());
+        CrowdLookTarget value = CrowdLookTarget.parse(this.track.getValue());
 
         this.setValue(new CrowdLookTarget(replayId, value.headYaw() || value.bodyYaw(), value.pitch(), value.bodyYaw(), value.headYaw()).encode());
         this.updateTargetLabel();
@@ -119,7 +119,7 @@ public class UICrowdLookTargetKeyframeFactory extends UIKeyframeFactory<String>
 
     private void updateControl(Boolean pitch, Boolean headYaw, Boolean bodyYaw)
     {
-        CrowdLookTarget value = CrowdLookTarget.parse(this.keyframe.getValue());
+        CrowdLookTarget value = CrowdLookTarget.parse(this.track.getValue());
 
         boolean newHeadYaw = headYaw == null ? value.headYaw() : headYaw;
         boolean newPitch = pitch == null ? value.pitch() : pitch;
@@ -138,7 +138,7 @@ public class UICrowdLookTargetKeyframeFactory extends UIKeyframeFactory<String>
 
     private void updateControls()
     {
-        CrowdLookTarget value = CrowdLookTarget.parse(this.keyframe.getValue());
+        CrowdLookTarget value = CrowdLookTarget.parse(this.track.getValue());
 
         this.headYaw.setValue(value.headYaw());
         this.pitch.setValue(value.pitch());

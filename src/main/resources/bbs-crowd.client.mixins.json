@@ -12,7 +12,8 @@
     "WorldVideoExportSessionCrowdMixin",
     "PanelVideoExportSessionCrowdMixin",
     "FilmsCrowdMixin",
-    "UITimelinePanelCrowdMixin"
+    "UITimelinePanelCrowdMixin",
+    "UIReplayPropertiesPanelCrowdMixin"
   ],
   "injectors": {
     "defaultRequire": 1

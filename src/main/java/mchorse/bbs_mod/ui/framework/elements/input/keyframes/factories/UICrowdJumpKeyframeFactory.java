@@ -6,9 +6,9 @@ import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
+import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UITrackValue;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
-import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
@@ -21,13 +21,13 @@ public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
     private final UITrackpad rate;
     private final UIToggle random;
 
-    public UICrowdJumpKeyframeFactory(Keyframe<CrowdJump> keyframe, UIKeyframes editor)
+    public UICrowdJumpKeyframeFactory(UITrackValue<CrowdJump> track, UIKeyframes editor)
     {
-        super(keyframe, editor);
+        super(track, editor);
 
-        if (keyframe.getValue() == null)
+        if (track.getValue() == null)
         {
-            keyframe.setValue(new CrowdJump());
+            track.setValue(new CrowdJump());
         }
 
         this.amount = new UITrackpad((value) -> this.edit((jump) -> jump.amount = value.floatValue()));
@@ -56,22 +56,12 @@ public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
 
     private void edit(Consumer<CrowdJump> consumer)
     {
-        CrowdJump jump = this.keyframe.getValue();
-
-        if (jump == null)
-        {
-            jump = new CrowdJump();
-            this.keyframe.setValue(jump);
-        }
-
-        this.keyframe.preNotify();
-        consumer.accept(jump);
-        this.keyframe.postNotify();
+        this.track.edit(consumer);
     }
 
     private void display()
     {
-        CrowdJump jump = this.keyframe.getValue();
+        CrowdJump jump = this.track.getValue();
 
         if (jump == null)
         {
@@ -81,5 +71,12 @@ public class UICrowdJumpKeyframeFactory extends UIKeyframeFactory<CrowdJump>
         this.amount.setValue(jump.amount);
         this.rate.setValue(jump.rate);
         this.random.setValue(jump.random);
+    }
+
+    @Override
+    public void update()
+    {
+        super.update();
+        this.display();
     }
 }

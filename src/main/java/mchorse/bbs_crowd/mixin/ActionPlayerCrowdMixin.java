@@ -39,8 +39,6 @@ public class ActionPlayerCrowdMixin {
 
     @Unique
     private final CrowdReconciler bbs_crowd$crowds = new CrowdReconciler();
-    @Unique
-    private boolean bbs_crowd$crowdExportReadySent;
 
     @Unique
     private void bbs_crowd$reconcileNow() {
@@ -48,6 +46,8 @@ public class ActionPlayerCrowdMixin {
             return;
         }
 
+        mchorse.bbs_crowd.CrowdActorContext.currentActors = this.actors;
+        mchorse.bbs_crowd.CrowdActorContext.currentRecordingPlayer = this.serverPlayer;
         this.bbs_crowd$crowds.reconcile(this.world, this.film, this.tick);
         CrowdKeyframeRuntime.apply(this.world, this.film, this.tick, this.actors);
     }
@@ -60,11 +60,6 @@ public class ActionPlayerCrowdMixin {
     @Inject(method = "applyAction", at = @At("HEAD"))
     private void bbs_crowd$applyCrowds(CallbackInfo ci) {
         this.bbs_crowd$reconcileNow();
-
-        if (!this.bbs_crowd$crowdExportReadySent && this.serverPlayer != null && FilmExportState.isExporting(this.serverPlayer.getUuid())) {
-            CrowdServerNetwork.sendCrowdPreloadReady(this.serverPlayer, this.film.getId());
-            this.bbs_crowd$crowdExportReadySent = true;
-        }
     }
 
     @Inject(method = "updateReplayEntities", at = @At("RETURN"))
@@ -80,6 +75,9 @@ public class ActionPlayerCrowdMixin {
     @Inject(method = "resetActorsForRestart", at = @At("RETURN"))
     private void bbs_crowd$onResetActors(CallbackInfo ci) {
         this.bbs_crowd$reconcileNow();
+        if (this.serverPlayer != null && this.film != null) {
+            CrowdServerNetwork.sendCrowdPreloadReady(this.serverPlayer, this.film.getId());
+        }
     }
 
     @Inject(method = "goTo(II)V", at = @At("RETURN"))

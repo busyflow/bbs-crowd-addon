@@ -128,7 +128,8 @@ public class CrowdSpawner
          * standing on a roof. Seeing none of it until the export is no better than seeing all
          * of it. So the preview spawns a sample rather than a prefix - see the stride below. */
         int preview = CrowdSettings.getCrowdPreviewCount();
-        int spawnCount = FilmExportState.isAnyExporting() || preview <= 0 ? count : Math.min(preview, count);
+        boolean exportFull = CrowdSettings.isCrowdExportFull();
+        int spawnCount = (FilmExportState.isAnyExporting() && exportFull) || preview <= 0 ? count : Math.min(preview, count);
         IntList spawned = new IntArrayList(spawnCount);
 
         /* Where this crowd is looking at the tick it appears, so a member can be placed already
@@ -496,7 +497,7 @@ public class CrowdSpawner
         {
             for (int cz = (int) Math.floor(spawn.z - halfWidth) >> 4; cz <= (int) Math.floor(spawn.z + halfWidth) >> 4; cz++)
             {
-                if (!world.getChunkManager().isChunkLoaded(cx, cz))
+                if (world.getChunk(cx, cz, net.minecraft.world.chunk.ChunkStatus.FULL, false) == null)
                 {
                     return false;
                 }
@@ -594,7 +595,7 @@ public class CrowdSpawner
          * Skipping the member instead simply leaves the crowd's edge at the loaded boundary.
          * A chunk part-way through generation counts as loaded but is not free to read, so ask
          * for a finished one and accept its absence rather than waiting for it. */
-        if (!world.getChunkManager().isChunkLoaded(bx >> 4, bz >> 4))
+        if (world.getChunk(bx >> 4, bz >> 4, net.minecraft.world.chunk.ChunkStatus.FULL, false) == null)
         {
             return null;
         }

@@ -27,50 +27,6 @@ public class BBSCrowdModClient implements ClientModInitializer {
         FormUtilsClient.register(CrowdForm.class, CrowdFormRenderer::new);
         mchorse.bbs_mod.ui.forms.editors.UIFormEditor.register(CrowdForm.class, mchorse.bbs_mod.ui.forms.editors.forms.UICrowdForm::new);
 
-        mchorse.bbs_mod.ui.film.replays.UIReplayPropertiesPanel.registerAction((filmPanel, replaySupplier) -> {
-            mchorse.bbs_mod.ui.framework.elements.buttons.UIButton configureButton = new mchorse.bbs_mod.ui.framework.elements.buttons.UIButton(
-                mchorse.bbs_mod.l10n.keys.IKey.constant("Crowd Setup..."),
-                (b) -> {
-                    mchorse.bbs_mod.film.replays.Replay replay = replaySupplier.get();
-                    if (replay != null && replay.form.get() instanceof CrowdForm crowdForm) {
-                        mchorse.bbs_mod.film.Film film = mchorse.bbs_mod.ui.film.UIFilmPanel.getEditedFilm();
-                        mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
-                        mchorse.bbs_mod.film.crowds.Crowd crowd = (crowds == null) ? null : crowds.byTag(crowdForm.crowd.get());
-                        if (crowd == null && crowds != null) {
-                            crowd = crowds.addCrowd();
-                            crowd.name.set("Crowd " + crowds.getList().size());
-                            crowdForm.crowd.set(crowd.crowdTag.get());
-                        }
-                        if (crowd != null) {
-                            mchorse.bbs_mod.ui.film.crowds.UICrowdOverlayPanel overlay = new mchorse.bbs_mod.ui.film.crowds.UICrowdOverlayPanel(
-                                crowd,
-                                () -> filmPanel.getUndoHandler().getUndoManager().markLastUndoNoMerging()
-                            );
-                            mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay.addOverlay(filmPanel.getContext(), overlay, 460, 0.85F);
-                        }
-                    }
-                }
-            );
-            configureButton.tooltip(mchorse.bbs_mod.l10n.keys.IKey.constant("Open complete crowd parameters dialog (population, model, formation, armor)."));
-            configureButton.color(Colors.ACTIVE);
-
-            mchorse.bbs_mod.ui.framework.elements.UIElement container = new mchorse.bbs_mod.ui.framework.elements.UIElement() {
-                @Override
-                public void render(mchorse.bbs_mod.ui.framework.UIContext context) {
-                    mchorse.bbs_mod.film.replays.Replay replay = replaySupplier.get();
-                    boolean isCrowd = replay != null && replay.form.get() instanceof CrowdForm;
-                    this.setVisible(isCrowd);
-                    if (isCrowd) {
-                        super.render(context);
-                    }
-                }
-            };
-            container.column(mchorse.bbs_mod.ui.utils.UIConstants.MARGIN).stretch().vertical();
-            container.add(configureButton);
-
-            return container;
-        });
-
         UIClip.register(CrowdBehaviorActionClip.class, UICrowdBehaviorActionClip::new);
 
         UIKeyframeFactory.register(CrowdKeyframeFactories.CROWD_LOOK_TARGET, UICrowdLookTargetKeyframeFactory::new);

@@ -91,7 +91,7 @@ public class UICrowdReplayProperties extends UIScrollView
         this.bindCrowd();
         this.refresh();
 
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
         if (film != null)
         {
             mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
@@ -124,7 +124,7 @@ public class UICrowdReplayProperties extends UIScrollView
      */
     private void bindCrowd()
     {
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
         mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
 
         if (film == null || crowds == null || crowds.byTag(this.form.crowd.get()) != null)
@@ -149,7 +149,7 @@ public class UICrowdReplayProperties extends UIScrollView
 
     private void refresh()
     {
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
         mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
         Crowd crowd = (film == null || crowds == null) ? null : crowds.byTag(this.form.crowd.get());
 
@@ -186,7 +186,7 @@ public class UICrowdReplayProperties extends UIScrollView
             channels.crowdPaint.insert(cursor, paint);
             channels.crowdPaint.postNotify();
 
-            Film film = UIFilmPanel.getEditedFilm();
+            Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
             if (film != null)
             {
                 ClientNetwork.sendSyncData(film.getId(), channels.crowdPaint);

@@ -13,3 +13,6 @@ out/
 run/
 libs/
 logs/
+*.json
+*.gz
+src/test/

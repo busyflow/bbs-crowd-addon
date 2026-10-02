@@ -12,4 +12,12 @@ public interface FilmCrowdAccess {
         }
         return null;
     }
+
+    static Film getEditedFilm() {
+        if (mchorse.bbs_mod.BBSModClient.getDashboardIfCreated() == null) {
+            return null;
+        }
+        mchorse.bbs_mod.ui.film.UIFilmPanel panel = mchorse.bbs_mod.BBSModClient.getDashboard().getPanel(mchorse.bbs_mod.ui.film.UIFilmPanel.class);
+        return panel == null ? null : panel.getData();
+    }
 }

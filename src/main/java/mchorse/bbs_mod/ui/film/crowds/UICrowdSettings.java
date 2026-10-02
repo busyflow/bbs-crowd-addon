@@ -277,7 +277,7 @@ public class UICrowdSettings extends UIElement
             consumer.accept(this.crowd);
             this.crowd.postNotify();
 
-            Film film = UIFilmPanel.getEditedFilm();
+            Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
             if (film != null)
             {
                 ClientNetwork.sendSyncData(film.getId(), this.crowd);
@@ -496,7 +496,7 @@ public class UICrowdSettings extends UIElement
 
     private void openAnchorMenu()
     {
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
 
         if (film == null)
         {
@@ -528,7 +528,7 @@ public class UICrowdSettings extends UIElement
 
     private void refreshAnchorLabel()
     {
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = mchorse.bbs_crowd.access.FilmCrowdAccess.getEditedFilm();
         int index = this.crowd == null ? -1 : this.crowd.anchor.get();
         List<Replay> replays = film == null ? List.of() : film.replays.getList();
 

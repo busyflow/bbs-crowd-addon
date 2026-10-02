@@ -7,11 +7,11 @@ import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
+import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UITrackValue;
 import mchorse.bbs_mod.ui.framework.elements.utils.UILabel;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.utils.colors.Colors;
-import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
@@ -27,13 +27,13 @@ public class UICrowdPaintKeyframeFactory extends UIKeyframeFactory<CrowdPaint>
     private final UIToggle run;
     private final UIButton clear;
 
-    public UICrowdPaintKeyframeFactory(Keyframe<CrowdPaint> keyframe, UIKeyframes editor)
+    public UICrowdPaintKeyframeFactory(UITrackValue<CrowdPaint> track, UIKeyframes editor)
     {
-        super(keyframe, editor);
+        super(track, editor);
 
-        if (keyframe.getValue() == null)
+        if (track.getValue() == null)
         {
-            keyframe.setValue(new CrowdPaint());
+            track.setValue(new CrowdPaint());
         }
 
         this.blockCount = UI.label(IKey.constant("0 blocks painted"));
@@ -76,24 +76,13 @@ public class UICrowdPaintKeyframeFactory extends UIKeyframeFactory<CrowdPaint>
 
     private void edit(Consumer<CrowdPaint> consumer)
     {
-        CrowdPaint paint = this.keyframe.getValue();
-
-        if (paint == null)
-        {
-            paint = new CrowdPaint();
-            this.keyframe.setValue(paint);
-        }
-
-        this.keyframe.preNotify();
-        consumer.accept(paint);
-        this.keyframe.postNotify();
-
+        this.track.edit(consumer);
         this.display();
     }
 
     private void display()
     {
-        CrowdPaint paint = this.keyframe.getValue();
+        CrowdPaint paint = this.track.getValue();
 
         if (paint != null)
         {
@@ -103,5 +92,12 @@ public class UICrowdPaintKeyframeFactory extends UIKeyframeFactory<CrowdPaint>
             this.terrain.setValue(paint.terrainFollow);
             this.run.setValue(paint.run);
         }
+    }
+
+    @Override
+    public void update()
+    {
+        super.update();
+        this.display();
     }
 }

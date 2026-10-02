@@ -72,6 +72,11 @@ public class UIReplaysEditorCrowdMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void bbs_crowd$onRender(UIContext context, CallbackInfo ci) {
+        if (this.bbs_crowd$crowdProperties == null || this.bbs_crowd$crowdProperties.getParent() == null) {
+            this.bbs_crowd$updateCrowdProperties(this.replay);
+        } else if (this.replay != null && this.replay.form.get() instanceof CrowdForm && !this.bbs_crowd$crowdIsShown) {
+            this.bbs_crowd$updateCrowdProperties(this.replay);
+        }
         this.bbs_crowd$updateCrowdPropertiesVisibility();
     }
 
@@ -141,6 +146,17 @@ public class UIReplaysEditorCrowdMixin {
             ? this.actionTimeline != null && this.actionTimeline.getClip() != null
             : this.keyframeEditor != null && this.keyframeEditor.editor != null;
 
-        this.bbs_crowd$crowdProperties.setVisible(this.propertiesVisible && this.bbs_crowd$crowdIsShown && !occupied);
+        boolean show = this.propertiesVisible && this.bbs_crowd$crowdIsShown && !occupied;
+        if (this.bbs_crowd$crowdProperties.isVisible() != show) {
+            this.bbs_crowd$crowdProperties.setVisible(show);
+            if (show) {
+                this.bbs_crowd$crowdProperties.resize();
+            }
+        } else if (show && this.filmPanel != null && this.filmPanel.editArea != null) {
+            if (this.bbs_crowd$crowdProperties.area.w != this.filmPanel.editArea.area.w
+                || this.bbs_crowd$crowdProperties.area.h != this.filmPanel.editArea.area.h) {
+                this.bbs_crowd$crowdProperties.resize();
+            }
+        }
     }
 }

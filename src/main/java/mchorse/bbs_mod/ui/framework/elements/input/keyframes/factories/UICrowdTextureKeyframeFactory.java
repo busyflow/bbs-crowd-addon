@@ -8,12 +8,14 @@ import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITexturePicker;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
+import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UITrackValue;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIFolderOverlayPanel;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.utils.colors.Colors;
-import mchorse.bbs_mod.utils.keyframes.Keyframe;
+
+import java.util.function.Consumer;
 
 /**
  * Apple/1UI-grade discrete crowd texture editor with explicit texture and random folder modes.
@@ -30,17 +32,14 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
     private final UIElement folderRow;
     private final UIElement content;
 
-    public UICrowdTextureKeyframeFactory(Keyframe<CrowdTexture> keyframe, UIKeyframes editor)
+    public UICrowdTextureKeyframeFactory(UITrackValue<CrowdTexture> track, UIKeyframes editor)
     {
-        super(keyframe, editor);
+        super(track, editor);
 
-        if (keyframe.getValue() == null)
+        if (track.getValue() == null)
         {
-            keyframe.setValue(new CrowdTexture());
+            track.setValue(new CrowdTexture());
         }
-
-        keyframe.setDuration(0F);
-        this.duration.setVisible(false);
 
         this.random = new UIToggle(IKey.constant("Randomize from Folder"), b ->
         {
@@ -90,11 +89,13 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
 
     private void pickTexture()
     {
-        UITexturePicker.open(this.getContext(), this.keyframe.getValue().texture, link ->
+        CrowdTexture current = this.track.getValue();
+        Link link = current == null ? null : current.texture;
+        UITexturePicker.open(this.getContext(), link, picked ->
         {
             this.edit(v ->
             {
-                v.texture = link;
+                v.texture = picked;
                 v.random = false;
             });
             this.refresh();
@@ -103,7 +104,7 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
 
     private void pickFolder()
     {
-        CrowdTexture value = this.keyframe.getValue();
+        CrowdTexture value = this.track.getValue();
         UIFolderOverlayPanel panel = new UIFolderOverlayPanel(
             IKey.constant("Crowd texture keyframe folder"),
             IKey.constant("Pick a folder containing PNG textures. Member choices stay deterministic."),
@@ -121,7 +122,7 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
             }
         );
 
-        if (value.folder != null)
+        if (value != null && value.folder != null)
         {
             panel.list.setPath(value.folder);
         }
@@ -129,16 +130,19 @@ public class UICrowdTextureKeyframeFactory extends UIKeyframeFactory<CrowdTextur
         UIOverlay.addOverlay(this.getContext(), panel, 320, 0.8F);
     }
 
-    private void edit(java.util.function.Consumer<CrowdTexture> consumer)
+    private void edit(Consumer<CrowdTexture> consumer)
     {
-        this.keyframe.preNotify();
-        consumer.accept(this.keyframe.getValue());
-        this.keyframe.postNotify();
+        this.track.edit(consumer);
     }
 
     private void refresh()
     {
-        CrowdTexture value = this.keyframe.getValue();
+        CrowdTexture value = this.track.getValue();
+        if (value == null)
+        {
+            value = new CrowdTexture();
+        }
+
         Link selectedTexture = value.texture;
         Link selectedFolder = value.folder;
 

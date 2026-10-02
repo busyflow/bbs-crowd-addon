@@ -37,12 +37,12 @@ public class BBSCrowdMod implements ModInitializer {
         BBSMod.getFactoryActionClips().register(
             Link.bbs("crowd_spawn"),
             CrowdSpawnActionClip.class,
-            new ClipFactoryData(Icons.CHICKEN, Colors.GREEN).hidden()
+            new ClipFactoryData(Icons.CHICKEN, Colors.GREEN)
         );
         BBSMod.getFactoryActionClips().register(
             new Link(MOD_ID, "crowd_spawn"),
             CrowdSpawnActionClip.class,
-            new ClipFactoryData(Icons.CHICKEN, Colors.GREEN).hidden()
+            new ClipFactoryData(Icons.CHICKEN, Colors.GREEN)
         );
 
         LOGGER.info("Initialized BBS Crowd Addon (Common)");

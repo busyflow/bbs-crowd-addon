@@ -1,6 +1,9 @@
 package mchorse.bbs_crowd.mixin;
 
+import mchorse.bbs_crowd.CrowdSettings;
 import mchorse.bbs_mod.actions.types.crowd.CrowdExportPreload;
+import mchorse.bbs_mod.film.Film;
+import mchorse.bbs_mod.film.VideoExportSession;
 import mchorse.bbs_mod.ui.film.PanelVideoExportSession;
 import mchorse.bbs_mod.ui.film.UIFilmPanel;
 import org.spongepowered.asm.mixin.Mixin;
@@ -12,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = PanelVideoExportSession.class, remap = false)
-public class PanelVideoExportSessionCrowdMixin {
+public abstract class PanelVideoExportSessionCrowdMixin extends VideoExportSession {
     @Shadow
     private UIFilmPanel editor;
 
@@ -21,17 +24,24 @@ public class PanelVideoExportSessionCrowdMixin {
 
     @Inject(method = "start", at = @At("HEAD"))
     private void bbs_crowd$onStart(int duration, int textureId, int width, int height, CallbackInfoReturnable<Boolean> cir) {
-        if (this.editor != null && this.editor.getData() != null) {
-            this.bbs_crowd$preloadFilmId = this.editor.getData().getId();
-            CrowdExportPreload.begin(this.bbs_crowd$preloadFilmId);
+        if (this.editor != null && this.editor.getData() != null && CrowdSettings.isCrowdExportFull()) {
+            Film film = this.editor.getData();
+            mchorse.bbs_mod.film.crowds.Crowds crowds = mchorse.bbs_crowd.access.FilmCrowdAccess.getCrowds(film);
+            if (crowds != null && !crowds.getList().isEmpty()) {
+                this.bbs_crowd$preloadFilmId = film.getId();
+                CrowdExportPreload.begin(this.bbs_crowd$preloadFilmId);
+            }
         }
     }
 
-    @Inject(method = "isWarmupReady", at = @At("HEAD"), cancellable = true)
-    private void bbs_crowd$onIsWarmupReady(CallbackInfoReturnable<Boolean> cir) {
-        if (this.bbs_crowd$preloadFilmId != null) {
-            cir.setReturnValue(CrowdExportPreload.isReady(this.bbs_crowd$preloadFilmId));
+    @Override
+    protected boolean isWarmupReady() {
+        if (this.bbs_crowd$preloadFilmId != null && CrowdSettings.isCrowdExportFull()) {
+            if (!CrowdExportPreload.isReady(this.bbs_crowd$preloadFilmId)) {
+                return false;
+            }
         }
+        return super.isWarmupReady();
     }
 
     @Inject(method = "teardown", at = @At("HEAD"))

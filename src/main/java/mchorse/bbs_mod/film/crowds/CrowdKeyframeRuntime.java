@@ -370,18 +370,45 @@ public class CrowdKeyframeRuntime
             double dx = position[0] - member.getX();
             double dz = position[2] - member.getZ();
             double moveDist = Math.sqrt(dx * dx + dz * dz);
+            
+            boolean isRunning = (frame != null && frame.path().run) || (paintFrame != null && paintFrame.path().run);
+            boolean isMoving = (frame != null && frame.moving()) || (paintFrame != null && paintFrame.isMoving(index));
+            
+            if (isMoving && moveDist < 10.0D) {
+                double maxSpeed = isRunning ? 0.6D : 0.25D; // Smooth walk/sprint speeds
+                Vec3d desired = new Vec3d(dx, 0, dz);
+                if (moveDist > maxSpeed) {
+                    desired = desired.normalize().multiply(maxSpeed);
+                }
+                
+                boolean flip = Math.floorMod(CrowdUtils.entitySeed(member, crowd.seed.get(), 0x2a71) + tick / 10, 2) == 0;
+                Vec3d allowed = CrowdSteering.getAllowedMotion(world, member, desired, 1.0D, true, flip);
+                
+                member.setVelocity(allowed.x, member.getVelocity().y, allowed.z);
+            } else {
+                member.setPos(position[0], position[1], position[2]);
+                member.setVelocity(Vec3d.ZERO);
+                member.velocityDirty = true;
+                member.fallDistance = 0F;
+                member.setOnGround(true);
+            }
+            
+            member.setStepHeight(1.0F);
+            
+            if (!terrainFollow) {
+                double dy = position[1] - member.getY();
+                double maxVerticalSpeed = isRunning ? 0.6D : 0.25D;
+                if (dy > maxVerticalSpeed) dy = maxVerticalSpeed;
+                if (dy < -maxVerticalSpeed) dy = -maxVerticalSpeed;
+                member.setVelocity(member.getVelocity().x, dy, member.getVelocity().z);
+            }
+            
+            member.move(net.minecraft.entity.MovementType.SELF, member.getVelocity());
 
-            member.setPos(position[0], position[1], position[2]);
-            member.setVelocity(Vec3d.ZERO);
-            member.velocityDirty = true;
-            member.fallDistance = 0F;
-            member.setOnGround(true);
             member.setInvulnerable(true);
             member.hurtTime = 0;
             member.maxHurtTime = 0;
 
-            boolean isRunning = (frame != null && frame.path().run) || (paintFrame != null && paintFrame.path().run);
-            boolean isMoving = (frame != null && frame.moving()) || (paintFrame != null && paintFrame.isMoving(index));
             member.setSprinting(isRunning && isMoving);
 
             if (isMoving && movingMembers != null)
@@ -391,6 +418,7 @@ public class CrowdKeyframeRuntime
 
             if (moveDist > 0.001D && isMoving)
             {
+                // Limbs animate naturally with member.move, but we can sync the animator for extra safety
                 member.limbAnimator.updateLimbs((float) Math.min(moveDist * 4.0F, 1.5F), 0.4F);
             }
 

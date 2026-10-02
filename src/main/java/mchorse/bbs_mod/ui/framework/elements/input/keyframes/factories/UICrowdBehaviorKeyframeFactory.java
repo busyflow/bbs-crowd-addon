@@ -6,10 +6,10 @@ import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
+import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UITrackValue;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIConstants;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
-import mchorse.bbs_mod.utils.keyframes.Keyframe;
 
 import java.util.function.Consumer;
 
@@ -22,13 +22,13 @@ public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehav
     private final UITrackpad speed;
     private final UITrackpad jumpRate;
 
-    public UICrowdBehaviorKeyframeFactory(Keyframe<CrowdBehavior> keyframe, UIKeyframes editor)
+    public UICrowdBehaviorKeyframeFactory(UITrackValue<CrowdBehavior> track, UIKeyframes editor)
     {
-        super(keyframe, editor);
+        super(track, editor);
 
-        if (keyframe.getValue() == null)
+        if (track.getValue() == null)
         {
-            keyframe.setValue(new CrowdBehavior());
+            track.setValue(new CrowdBehavior());
         }
 
         this.mode = new UIButton(IKey.EMPTY, (b) -> this.openModeMenu());
@@ -72,22 +72,12 @@ public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehav
 
     private void edit(Consumer<CrowdBehavior> consumer)
     {
-        CrowdBehavior behavior = this.keyframe.getValue();
-
-        if (behavior == null)
-        {
-            behavior = new CrowdBehavior();
-            this.keyframe.setValue(behavior);
-        }
-
-        this.keyframe.preNotify();
-        consumer.accept(behavior);
-        this.keyframe.postNotify();
+        this.track.edit(consumer);
     }
 
     private void display()
     {
-        CrowdBehavior behavior = this.keyframe.getValue();
+        CrowdBehavior behavior = this.track.getValue();
 
         if (behavior == null)
         {
@@ -97,5 +87,12 @@ public class UICrowdBehaviorKeyframeFactory extends UIKeyframeFactory<CrowdBehav
         this.mode.label = IKey.constant(behavior.getKind().title);
         this.speed.setValue(behavior.speed);
         this.jumpRate.setValue(behavior.jumpRate);
+    }
+
+    @Override
+    public void update()
+    {
+        super.update();
+        this.display();
     }
 }

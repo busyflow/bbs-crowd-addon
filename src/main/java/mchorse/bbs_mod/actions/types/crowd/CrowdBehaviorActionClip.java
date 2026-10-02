@@ -522,17 +522,17 @@ public class CrowdBehaviorActionClip extends ActionClip
             return null;
         }
 
-        if (this.target.get() == DamageActionClip.recordingReplay)
+        if (this.target.get() == -1)
         {
-            return DamageActionClip.recordingPlayer;
+            return mchorse.bbs_crowd.CrowdActorContext.currentRecordingPlayer;
         }
 
-        if (DamageActionClip.actorContext == null)
+        if (mchorse.bbs_crowd.CrowdActorContext.currentActors == null)
         {
             return null;
         }
 
-        return DamageActionClip.actorContext.get(targetReplay.getId());
+        return mchorse.bbs_crowd.CrowdActorContext.currentActors.get(targetReplay.getId());
     }
 
     private FightTarget chooseFightTarget(LivingEntity entity, List<LivingEntity> enemies, LivingEntity replayEnemy,

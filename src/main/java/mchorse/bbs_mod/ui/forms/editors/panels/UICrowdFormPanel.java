@@ -33,7 +33,7 @@ public class UICrowdFormPanel extends UIFormPanel<CrowdForm>
     {
         super.startEdit(form);
 
-        Film film = UIFilmPanel.getEditedFilm();
+        Film film = FilmCrowdAccess.getEditedFilm();
         Crowds crowds = FilmCrowdAccess.getCrowds(film);
         Crowd crowd = (crowds == null || form == null) ? null : crowds.byTag(form.crowd.get());
 
